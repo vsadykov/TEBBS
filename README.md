@@ -15,6 +15,10 @@ plot_key - key to show the plot via local pyplot interface. 0 by default ( = do 
 
 fluxes - fluxes of the GOES X-ray data during the flare
 
+Tarray - best solution for the Temperature curve
+
+EMarray - best solution for the Emission Measure curve
+
 timing - timing of the flux in 'yyyy-mm-dd hh:mm:ss' format
 
 T, Tmin, Tmax - peak value of the Temperature and its error bounds
@@ -27,4 +31,4 @@ start_time = '2014-06-13T06:43:00'
 
 end_time = '2014-06-13T06:51:00'
 
-fluxes, timing, T, Tmin, Tmax, Ttime, EM, EMmin, EMmax, EMtime = TEBBS_calculate(start_time, end_time, plot_key = 1)
+fluxes, Tarray, EMarray, timing, T, Tmin, Tmax, Ttime, EM, EMmin, EMmax, EMtime = TEBBS_calculate(start_time, end_time, plot_key = 0)

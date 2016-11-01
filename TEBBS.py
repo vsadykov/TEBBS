@@ -391,14 +391,18 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0):
 
     
     # calculating parameters
-    Tmax = numpy.amax(plot_temp[plot_temp.shape[0]/6:7*plot_temp.shape[0]/10,ibest,jbest])
-    EMmax = numpy.amax(plot_em[plot_em.shape[0]/6:7*plot_em.shape[0]/10,ibest,jbest])
-    Tmax_time = ftiming_ext[plot_temp.shape[0]/6 + numpy.argmax(plot_temp[plot_temp.shape[0]/6:7*plot_temp.shape[0]/10,ibest,jbest])]
-    EMmax_time = ftiming_ext[plot_temp.shape[0]/6 + numpy.argmax(plot_em[plot_em.shape[0]/6:7*plot_em.shape[0]/10,ibest,jbest])]
+    Tmax = numpy.amax(plot_temp[plot_temp.shape[0]/6:8*plot_temp.shape[0]/10,ibest,jbest])
+    EMmax = numpy.amax(plot_em[plot_em.shape[0]/6:8*plot_em.shape[0]/10,ibest,jbest])
+    Tmax_time = ftiming_ext[plot_temp.shape[0]/6 + numpy.argmax(plot_temp[plot_temp.shape[0]/6:8*plot_temp.shape[0]/10,ibest,jbest])]
+    EMmax_time = ftiming_ext[plot_temp.shape[0]/6 + numpy.argmax(plot_em[plot_em.shape[0]/6:8*plot_em.shape[0]/10,ibest,jbest])]
     # converting the times for flares
     ftiming_ext = converttime_sec_string(ftiming_ext,start_time)
     Tmax_time = converttime_sec_string(Tmax_time, start_time)
     EMmax_time = converttime_sec_string(EMmax_time, start_time)
-    return fluxes, ftiming_ext, Tmax, temp_errmin, temp_errmax, Tmax_time, EMmax, em_errmin, em_errmax, EMmax_time
+    # creating output arrays of T and EM
+    T_out = plot_temp[:,ibest,jbest]
+    EM_out = plot_em[:,ibest,jbest]
+    fluxes_out = flareflux_ext[:,ibest,jbest,:]
+    return fluxes_out, T_out, EM_out, ftiming_ext, Tmax, temp_errmin, temp_errmax, Tmax_time, EMmax, em_errmin, em_errmax, EMmax_time
     
     
