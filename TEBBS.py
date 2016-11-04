@@ -115,8 +115,8 @@ def make_grid(Amin, Bmin):
     bgrid = numpy.zeros([20,20,2])
     for i in range (0,20,1):
         for j in range (0,20,1):
-            bgrid[i,j,0] = float(i+1)*Amin/20.0
-            bgrid[i,j,1] = float(j+1)*Bmin/20.0
+            bgrid[i,j,0] = float(i+0.5)*Amin/20.0
+            bgrid[i,j,1] = float(j+0.5)*Bmin/20.0
     return bgrid
 
 
@@ -167,33 +167,42 @@ def calculate_temperature_em(fluxes, gnum):
 
 # hot flare test; if the temperature is < 4MK for one of the points of the flare, discard the background combination
 def test_temperature_min(temp, labelgrid):
+    temperature_min_flag = 1
+    labelgrid_copy = numpy.copy(labelgrid)
     for i in range (0,temp.shape[1],1):
         for j in range (0,temp.shape[2],1):
             if (numpy.amin(temp[:,i,j]) < 4.0): labelgrid[i,j] = 0
-    return labelgrid
+    # if there are no solutions satisfying this condition, let's leave all of them
+    if (sum(sum(labelgrid)) == 0):
+        labelgrid = numpy.copy(labelgrid_copy)
+        temperature_min_flag = 0
+    return labelgrid, temperature_min_flag
     
 
 # increasing array test; if the array growth is < average -7%, discard the background combination
 def test_array_increase(temp, labelgrid):
     total_increases = 0
-    for t in range (1,temp.shape[0],1):
-        for i in range (0,temp.shape[1],1):
-            for j in range (0,temp.shape[2],1):
-                if (temp[t,i,j] > temp[t-1,i,j]): total_increases += 1
-    total_increases = total_increases/(temp.shape[1]*temp.shape[2])
+    for i in range (0,temp.shape[1],1):
+        for j in range (0,temp.shape[2],1):
+            if (labelgrid[i,j] == 1):
+                for t in range (1,temp.shape[0],1):
+                    if (temp[t,i,j] > temp[t-1,i,j]): total_increases += 1
+    total_increases = total_increases/sum(sum(labelgrid))   # normalizing to number of curves
     total_increases -= int(0.07*float(total_increases))    # -7% as suggested in the paper
     for i in range (0,temp.shape[1],1):
         for j in range (0,temp.shape[2],1):
-            increases = 0
-            for t in range (1,temp.shape[0],1):
-                if (temp[t,i,j] > temp[t-1,i,j]): increases += 1
-            if (increases <= total_increases): labelgrid[i,j] = 0
+            if (labelgrid[i,j] == 1):
+                increases = 0
+                for t in range (1,temp.shape[0],1):
+                    if (temp[t,i,j] > temp[t-1,i,j]): increases += 1
+                if (increases <= total_increases): labelgrid[i,j] = 0
     return labelgrid
 
 
 # test for the initial 1/6 of the growing phase. If the peak in extended flux is greater than the peak in removed 1/5th one,
 # discard the background combination. If the output is zero, return one with smallest peak deviation
 def test_t_em_initials(temp, temp_ext, em, em_ext, labelgrid):
+    initials_flag = 1
     labelgrid_temp = numpy.copy(labelgrid)
     labelgrid_em = numpy.copy(labelgrid)
     labelgrid_ext = numpy.copy(labelgrid)
@@ -207,6 +216,7 @@ def test_t_em_initials(temp, temp_ext, em, em_ext, labelgrid):
             for j in range (0,temp.shape[2],1):
                 labelgrid_ext[i,j] = labelgrid[i,j]*labelgrid_temp[i,j]*labelgrid_em[i,j]
     if (sum(sum(labelgrid_ext)) == 0):
+        initials_flag = 0
         if ((sum(sum(labelgrid_temp)) == 0) and sum(sum(labelgrid_em)) > 0):
             for i in range (0,temp.shape[1],1):
                 for j in range (0,temp.shape[2],1):
@@ -229,11 +239,10 @@ def test_t_em_initials(temp, temp_ext, em, em_ext, labelgrid):
                     if ((dev < deviation) and (labelgrid[i,j] == 1)):
                         deviation = dev
                         indexes = [i,j]
-    
     # if everything is all right
     if (indexes != [-1,-1]):
-        labelgrid_ext[indexes[0],indexes[1]] = 1    
-    return labelgrid_ext
+        labelgrid_ext[indexes[0],indexes[1]] = 1
+    return labelgrid_ext, initials_flag
             
             
 # define error ranges for the selected array
@@ -325,24 +334,22 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0):
         flare_start_time = return_sec(start_time)
         flare_end_time = return_sec(end_time)
         
-        
     if (mid_cross == True):
         gver1, goesfile1, goesfile_short1 = find_goesfile(start_time)
         gver2, goesfile2, goesfile_short2 = find_goesfile(end_time)
         if (gver1 == 0): sys.exit("The corresponding GOES file was not found")
         if (gver2 == 0): sys.exit("The corresponding GOES file was not found")
         if (gver1 != gver2): sys.exit("The versions of the files were inconsistent for the day transition")
-        gver = gver1    # otherwise we've made an exit from the program
+        gver = gver1    # otherwise we've exit from the program
         if (os.path.isfile(goesfile_short1) == False): wget.download(goesfile1)
         if (os.path.isfile(goesfile_short2) == False): wget.download(goesfile2)
         timing1, fluxes1 = read_flux(goesfile_short1)
         timing2, fluxes2 = read_flux(goesfile_short2)
         timing2 += 86400.0
         timing = numpy.concatenate((timing1, timing2), axis = 0)
-        fluxes = numpy.concatenate((fluxes1, fluxes2), axis = 0)
+        fluxes = numpy.concatenate((fluxes2, fluxes1), axis = 0)
         flare_start_time = return_sec(start_time)
         flare_end_time = return_sec(end_time)+86400
-
 
     flare_peak_time = find_max_sec(timing, fluxes, flare_start_time, flare_end_time)
     Amin, Bmin = extract_min(timing, flare_start_time, flare_peak_time, fluxes)
@@ -354,10 +361,10 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0):
     temp, em = calculate_temperature_em(fluxes_bsub, gver)
     temp_ext, em_ext = calculate_temperature_em(fluxes_bsub_ext, gver)
     # Now, let's apply a couple of tests. Linear fit suggested in the paper is not used for the tests.
-    labelgrid = test_temperature_min(temp, labelgrid)
+    labelgrid, temperature_min_flag = test_temperature_min(temp, labelgrid)
     labelgrid = test_array_increase(temp, labelgrid)
     labelgrid = test_array_increase(em, labelgrid)
-    labelgrid = test_t_em_initials(temp, temp_ext, em, em_ext, labelgrid)
+    labelgrid, initials_flag = test_t_em_initials(temp, temp_ext, em, em_ext, labelgrid)
 
 
     # Now, after all the tests performed, let's calculate T and EM and plot the variety of curves for them
@@ -403,6 +410,6 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0):
     T_out = plot_temp[:,ibest,jbest]
     EM_out = plot_em[:,ibest,jbest]
     fluxes_out = flareflux_ext[:,ibest,jbest,:]
-    return fluxes_out, T_out, EM_out, ftiming_ext, Tmax, temp_errmin, temp_errmax, Tmax_time, EMmax, em_errmin, em_errmax, EMmax_time
+    return fluxes_out, T_out, EM_out, ftiming_ext, Tmax, temp_errmin, temp_errmax, Tmax_time, EMmax, em_errmin, em_errmax, EMmax_time, temperature_min_flag, initials_flag
     
     

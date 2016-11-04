@@ -25,10 +25,16 @@ T, Tmin, Tmax - peak value of the Temperature and its error bounds
 
 EM, EMmin, EMmax - peak values of the Emission Measure and its error bounds
 
+tmin_test_flag - flag showing if the hot flare test passed (1 for passed, 0 for failed).
+If the test is failed, it is not applied for the studied event.
+
+init_test_flag - flag showing if the test for the initial 1/6 interval of the growing phase passed (1 for passed, 0 for failed).
+If the test is failed, the curve having the smallest oscillation of initials is chosen.
+
 ### Example:
 
 start_time = '2014-06-13T06:43:00'
 
 end_time = '2014-06-13T06:51:00'
 
-fluxes, Tarray, EMarray, timing, T, Tmin, Tmax, Ttime, EM, EMmin, EMmax, EMtime = TEBBS_calculate(start_time, end_time, plot_key = 0)
+fluxes, Tarray, EMarray, timing, T, Tmin, Tmax, Ttime, EM, EMmin, EMmax, EMtime, tmin_test_flag, init_test_flag = TEBBS_calculate(start_time, end_time, plot_key = 0)
