@@ -296,7 +296,7 @@ def find_goesfile(time):
     if check_url('http://umbra.nascom.nasa.gov/goes/fits/'+year+'/go14'+file_postfix+'.fits') == True : gver = '14'
     if check_url('http://umbra.nascom.nasa.gov/goes/fits/'+year+'/go15'+file_postfix+'.fits') == True : gver = '15'
     filename = 'http://umbra.nascom.nasa.gov/goes/fits/'+year+'/go'+gver+file_postfix+'.fits'
-    filename_short = 'go'+gver+file_postfix+'.fits'
+    filename_short = './goes_rawdata/go'+gver+file_postfix+'.fits'
     return int(gver), filename, filename_short
 
 
@@ -316,6 +316,19 @@ def converttime_sec_string(timing,start_time):
             sctime = datetime.datetime.strftime(ctime, "%Y-%m-%d %H:%M:%S")
             stiming.append(sctime)
     return stiming
+
+
+# correction for the negative flux values (instrumental)
+def correct_flux(fluxes):
+    # forward correction
+    for i in range(1,fluxes.shape[0],1):
+        if (fluxes[i,0] <= 0.0): fluxes[i,0] = fluxes[i-1,0]
+        if (fluxes[i,1] <= 0.0): fluxes[i,1] = fluxes[i-1,1]
+    # backward correction
+    for i in range(fluxes.shape[0]-2,-1,-1):
+        if (fluxes[i,0] <= 0.0): fluxes[i,0] = fluxes[i+1,0]
+        if (fluxes[i,1] <= 0.0): fluxes[i,1] = fluxes[i+1,1]
+    return fluxes
     
     
 
@@ -329,7 +342,9 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0):
     if (mid_cross == False):
         gver, goesfile, goesfile_short = find_goesfile(start_time)
         if (gver == 0): sys.exit("The corresponding GOES file was not found")
-        if (os.path.isfile(goesfile_short) == False): wget.download(goesfile)
+        if (os.path.isfile(goesfile_short) == False):
+            ftemp = wget.download(goesfile)
+            os.system('mv '+ftemp+' ./goes_rawdata/')
         timing, fluxes = read_flux(goesfile_short)
         flare_start_time = return_sec(start_time)
         flare_end_time = return_sec(end_time)
@@ -341,8 +356,12 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0):
         if (gver2 == 0): sys.exit("The corresponding GOES file was not found")
         if (gver1 != gver2): sys.exit("The versions of the files were inconsistent for the day transition")
         gver = gver1    # otherwise we've exit from the program
-        if (os.path.isfile(goesfile_short1) == False): wget.download(goesfile1)
-        if (os.path.isfile(goesfile_short2) == False): wget.download(goesfile2)
+        if (os.path.isfile(goesfile_short1) == False):
+            ftemp = wget.download(goesfile1)
+            os.system('mv '+ftemp+' ./goes_rawdata/')
+        if (os.path.isfile(goesfile_short2) == False):
+            ftemp = wget.download(goesfile2)
+            os.system('mv '+ftemp+' ./goes_rawdata/')
         timing1, fluxes1 = read_flux(goesfile_short1)
         timing2, fluxes2 = read_flux(goesfile_short2)
         timing2 += 86400.0
@@ -351,11 +370,17 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0):
         flare_start_time = return_sec(start_time)
         flare_end_time = return_sec(end_time)+86400
 
+    fluxes = correct_flux(fluxes)
     flare_peak_time = find_max_sec(timing, fluxes, flare_start_time, flare_end_time)
+    if ((int(flare_peak_time) == 0) or (int(flare_peak_time) == int(flare_start_time))):
+        print "The timing is incorrect. Interrupting run for the current flare..."
+        return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0
     Amin, Bmin = extract_min(timing, flare_start_time, flare_peak_time, fluxes)
     bgrid = make_grid(Amin, Bmin)
     labelgrid = numpy.zeros([bgrid.shape[0],bgrid.shape[1]], dtype = int)+1
     fluxes_bsub, fluxes_bsub_ext, ftimimng, ftiming_ext = extract_fluxes(timing, flare_start_time, flare_peak_time, fluxes, bgrid)
+    rising_phase_bins = fluxes_bsub.shape[0]
+    
     # Now, one has a variety of background-subtracted arrays for both with first 1/6 of the rising phase
     # (called *ext) and without it. Let's calculate Temperatures and EMs for them.
     temp, em = calculate_temperature_em(fluxes_bsub, gver)
@@ -410,6 +435,6 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0):
     T_out = plot_temp[:,ibest,jbest]
     EM_out = plot_em[:,ibest,jbest]
     fluxes_out = flareflux_ext[:,ibest,jbest,:]
-    return fluxes_out, T_out, EM_out, ftiming_ext, Tmax, temp_errmin, temp_errmax, Tmax_time, EMmax, em_errmin, em_errmax, EMmax_time, temperature_min_flag, initials_flag
+    return fluxes_out, T_out, EM_out, ftiming_ext, Tmax, temp_errmin, temp_errmax, Tmax_time, EMmax, em_errmin, em_errmax, EMmax_time, temperature_min_flag, initials_flag, rising_phase_bins
     
     
