@@ -11,6 +11,8 @@ end_time - end time of the flare in 'yyyy-mm-ddThh:mm:ss' format
 
 plot_key - key to show the plot via local pyplot interface. 0 by default ( = do not show)
 
+sys_win - set it to be equal to 1 for usage under windows (the numpy.concatenate function was found to work differently for windows and linux distributions)
+
 ### Output parameters:
 
 fluxes - fluxes of the GOES X-ray data during the flare
