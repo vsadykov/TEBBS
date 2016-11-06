@@ -370,6 +370,8 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0):
         flare_start_time = return_sec(start_time)
         flare_end_time = return_sec(end_time)+86400
 
+    istart = numpy.argmin(abs(timing-flare_start_time))
+    iend = numpy.argmin(abs(timing-flare_end_time))
     fluxes = correct_flux(fluxes)
     flare_peak_time = find_max_sec(timing, fluxes, flare_start_time, flare_end_time)
     if ((int(flare_peak_time) == 0) or (int(flare_peak_time) == int(flare_start_time))):

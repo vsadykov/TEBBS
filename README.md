@@ -31,6 +31,9 @@ If the test is failed, it is not applied for the studied event.
 init_test_flag - flag showing if the test for the initial 1/6 interval of the growing phase passed (1 for passed, 0 for failed).
 If the test is failed, the curve having the smallest oscillation of initials is chosen.
 
+rising_phase_bins - number of data points for the flare rising phase.
+If this number is low (ideally should be 20-30 for each minute of the phase), there is a significant data loss taking place for the flare.
+
 ### Example:
 
 start_time = '2014-06-13T06:43:00'
