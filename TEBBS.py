@@ -373,8 +373,6 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0, sys_win = 0):
         flare_end_time = return_sec(end_time)+86400
 
     fluxes = correct_flux(fluxes)
-    plt.plot(timing[istart:iend], fluxes[istart:iend,0])
-    plt.show()
     flare_peak_time = find_max_sec(timing, fluxes, flare_start_time, flare_end_time)
     if ((int(flare_peak_time) == 0) or (int(flare_peak_time) == int(flare_start_time))):
         print "The timing is incorrect. Interrupting run for the current flare..."
