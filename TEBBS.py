@@ -4,6 +4,7 @@ import os, sys
 from astropy.io import fits
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
+from scipy.signal import savgol_filter
 import requests
 import wget
 import shutil
@@ -330,11 +331,20 @@ def correct_flux(fluxes):
         if (fluxes[i,0] <= 0.0): fluxes[i,0] = fluxes[i+1,0]
         if (fluxes[i,1] <= 0.0): fluxes[i,1] = fluxes[i+1,1]
     return fluxes
-    
-    
 
-
-def TEBBS_calculate(start_time, end_time, plot_key = 0, sys_win = 0):
+# apply Savitzky-Golay smoothing if selected
+def sgsmooth_flux(fluxes, gver):
+    if (gver <= '12'):
+        window_size = 11
+    else:
+        window_size = 15
+    order = 3
+    fluxes[:,0] = savgol_filter(numpy.copy(fluxes[:,0]), window_size, order)
+    fluxes[:,1] = savgol_filter(numpy.copy(fluxes[:,1]), window_size, order)
+    return fluxes
+    
+# main   
+def TEBBS_calculate(start_time, end_time, plot_key = 0, sys_win = 0, savitzky_golay = 0):
     
     # checking if the flare crossed the midnight point
     mid_cross = False
@@ -374,6 +384,7 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0, sys_win = 0):
         flare_end_time = return_sec(end_time)+86400
 
     fluxes = correct_flux(fluxes)
+    if (savitzky_golay == 1): fluxes = sgsmooth_flux(fluxes, gver)
     flare_peak_time = find_max_sec(timing, fluxes, flare_start_time, flare_end_time)
     if ((int(flare_peak_time) == 0) or (int(flare_peak_time) == int(flare_start_time))):
         print "The timing is incorrect. Interrupting run for the current flare..."
@@ -438,6 +449,11 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0, sys_win = 0):
     T_out = plot_temp[:,ibest,jbest]
     EM_out = plot_em[:,ibest,jbest]
     fluxes_out = flareflux_ext[:,ibest,jbest,:]
-    return fluxes_out, T_out, EM_out, ftiming_ext, Tmax, temp_errmin, temp_errmax, Tmax_time, EMmax, em_errmin, em_errmax, EMmax_time, temperature_min_flag, initials_flag, rising_phase_bins
+    # Figuring out the peaks and the peak times of the fluxes
+    AFluxMax = numpy.amax(numpy.copy(fluxes_out[:,0]))
+    BFluxMax = numpy.amax(numpy.copy(fluxes_out[:,1]))
+    AFluxTime = ftiming_ext[numpy.argmax(numpy.copy(fluxes_out[:,0]))]
+    BFluxTime = ftiming_ext[numpy.argmax(numpy.copy(fluxes_out[:,1]))]
+    return fluxes_out, T_out, EM_out, ftiming_ext, AFluxMax, AFluxTime, BFluxMax, BFluxTime, Tmax, temp_errmin, temp_errmax, Tmax_time, EMmax, em_errmin, em_errmax, EMmax_time, temperature_min_flag, initials_flag, rising_phase_bins
     
     
