@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 import requests
 import wget
+import shutil
 
 # function to read the Temperature-Denomenator array from the file for the corresponding GOES satellite
 def read_t_denom_file(gver):
@@ -344,7 +345,7 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0, sys_win = 0):
         if (gver == 0): sys.exit("The corresponding GOES file was not found")
         if (os.path.isfile(goesfile_short) == False):
             ftemp = wget.download(goesfile)
-            os.system('mv '+ftemp+' ./goes_rawdata/')
+            shutil.move(ftemp, './goes_rawdata/')
         timing, fluxes = read_flux(goesfile_short)
         flare_start_time = return_sec(start_time)
         flare_end_time = return_sec(end_time)
@@ -358,10 +359,10 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0, sys_win = 0):
         gver = gver1    # otherwise we've exit from the program
         if (os.path.isfile(goesfile_short1) == False):
             ftemp = wget.download(goesfile1)
-            os.system('mv '+ftemp+' ./goes_rawdata/')
+            shutil.move(ftemp, './goes_rawdata/')
         if (os.path.isfile(goesfile_short2) == False):
             ftemp = wget.download(goesfile2)
-            os.system('mv '+ftemp+' ./goes_rawdata/')
+            shutil.move(ftemp, './goes_rawdata/')
         timing1, fluxes1 = read_flux(goesfile_short1)
         timing2, fluxes2 = read_flux(goesfile_short2)
         timing2 += 86400.0
