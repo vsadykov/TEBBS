@@ -15,6 +15,8 @@ sys_win - set it to be equal to 1 for usage under windows (the numpy.concatenate
 
 savitzky_golay - set it to be equal to 1 to apply the Savitzky-Golay smoothing filter for GOES light curves (scipy.signal.savgol_filter with approx 30s window and cubic polynomial fit)
 
+extend_50 - option to return curves which are 50% longer than the flare (set to 1). Default is 20% of the flare (set to 0).
+
 ### Output parameters:
 
 fluxes - fluxes of the GOES X-ray data during the flare
@@ -48,4 +50,4 @@ start_time = '2014-06-13T06:43:00'
 
 end_time = '2014-06-13T06:51:00'
 
-fluxes, Tarray, EMarray, timing, T, Tmin, Tmax, Ttime, EM, EMmin, EMmax, EMtime, tmin_test_flag, init_test_flag = TEBBS_calculate(start_time, end_time, plot_key = 0)
+fluxes, Tarray, EMarray, timing, AFluxMax, AFluxTime, BFluxMax, BFluxTime, T, Tmin, Tmax, Ttime, EM, EMmin, EMmax, EMtime, tmin_test_flag, init_test_flag, rising_phase_bins = TEBBS_calculate(start_time, end_time, plot_key = 0, sys_win = 1, savitzky_golay = 1, extend_50 = 0)
