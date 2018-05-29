@@ -441,15 +441,15 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0, sys_win = 0, savitzky_go
     
     # calculating parameters
     if (extend_50 == 0):
-        Tmax = numpy.amax(plot_temp[plot_temp.shape[0]/6:8*plot_temp.shape[0]/10,ibest,jbest])
-        EMmax = numpy.amax(plot_em[plot_em.shape[0]/6:8*plot_em.shape[0]/10,ibest,jbest])
-        Tmax_time = ftiming_ext[plot_temp.shape[0]/6 + numpy.argmax(plot_temp[plot_temp.shape[0]/6:8*plot_temp.shape[0]/10,ibest,jbest])]
-        EMmax_time = ftiming_ext[plot_temp.shape[0]/6 + numpy.argmax(plot_em[plot_em.shape[0]/6:8*plot_em.shape[0]/10,ibest,jbest])]
+        Tmax = numpy.amax(plot_temp[5*plot_temp.shape[0]/36:5*plot_temp.shape[0]/6,ibest,jbest])
+        EMmax = numpy.amax(plot_em[5*plot_em.shape[0]/36:5*plot_em.shape[0]/6,ibest,jbest])
+        Tmax_time = ftiming_ext[5*plot_temp.shape[0]/36 + numpy.argmax(plot_temp[5*plot_temp.shape[0]/36:5*plot_temp.shape[0]/6,ibest,jbest])]
+        EMmax_time = ftiming_ext[5*plot_temp.shape[0]/36 + numpy.argmax(plot_em[5*plot_em.shape[0]/36:5*plot_em.shape[0]/6,ibest,jbest])]
     else:
-        Tmax = numpy.amax(plot_temp[plot_temp.shape[0]/9:8*plot_temp.shape[0]/12,ibest,jbest])
-        EMmax = numpy.amax(plot_em[plot_em.shape[0]/9:8*plot_em.shape[0]/12,ibest,jbest])
-        Tmax_time = ftiming_ext[plot_temp.shape[0]/9 + numpy.argmax(plot_temp[plot_temp.shape[0]/9:8*plot_temp.shape[0]/12,ibest,jbest])]
-        EMmax_time = ftiming_ext[plot_temp.shape[0]/9 + numpy.argmax(plot_em[plot_em.shape[0]/9:8*plot_em.shape[0]/12,ibest,jbest])]
+        Tmax = numpy.amax(plot_temp[plot_temp.shape[0]/9:2*plot_temp.shape[0]/3,ibest,jbest])
+        EMmax = numpy.amax(plot_em[plot_em.shape[0]/9:2*plot_em.shape[0]/3,ibest,jbest])
+        Tmax_time = ftiming_ext[plot_temp.shape[0]/9 + numpy.argmax(plot_temp[plot_temp.shape[0]/9:2*plot_temp.shape[0]/3,ibest,jbest])]
+        EMmax_time = ftiming_ext[plot_temp.shape[0]/9 + numpy.argmax(plot_em[plot_em.shape[0]/9:2*plot_em.shape[0]/3,ibest,jbest])]
     # converting the times for flares
     ftiming_ext = converttime_sec_string(ftiming_ext,start_time)
     Tmax_time = converttime_sec_string(Tmax_time, start_time)
@@ -460,16 +460,17 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0, sys_win = 0, savitzky_go
     fluxes_out = flareflux_ext[:,ibest,jbest,:]
     # Figuring out the peaks and the peak times of the fluxes
     if (extend_50 == 0):
-        AFluxMax = numpy.amax(numpy.copy(fluxes_out[:,0]))
-        BFluxMax = numpy.amax(numpy.copy(fluxes_out[:,1]))
-        AFluxTime = ftiming_ext[numpy.argmax(numpy.copy(fluxes_out[:,0]))]
-        BFluxTime = ftiming_ext[numpy.argmax(numpy.copy(fluxes_out[:,1]))]
+        flxlength = len(numpy.copy(fluxes_out[:,0]))
+        AFluxMax = numpy.amax(numpy.copy(fluxes_out[5*flxlength/36:5*flxlength/6,0]))
+        BFluxMax = numpy.amax(numpy.copy(fluxes_out[5*flxlength/36:5*flxlength/6,1]))
+        AFluxTime = ftiming_ext[5*flxlength/36 + numpy.argmax(numpy.copy(fluxes_out[5*flxlength/36:5*flxlength/6,0]))]
+        BFluxTime = ftiming_ext[5*flxlength/36 + numpy.argmax(numpy.copy(fluxes_out[5*flxlength/36:5*flxlength/6,1]))]
     else:
         flxlength = len(numpy.copy(fluxes_out[:,0]))
-        AFluxMax = numpy.amax(numpy.copy(fluxes_out[0:2*flxlength/3,0]))
-        BFluxMax = numpy.amax(numpy.copy(fluxes_out[0:2*flxlength/3,1]))
-        AFluxTime = ftiming_ext[numpy.argmax(numpy.copy(fluxes_out[0:2*flxlength/3,0]))]
-        BFluxTime = ftiming_ext[numpy.argmax(numpy.copy(fluxes_out[0:2*flxlength/3,1]))]
+        AFluxMax = numpy.amax(numpy.copy(fluxes_out[flxlength/9:2*flxlength/3,0]))
+        BFluxMax = numpy.amax(numpy.copy(fluxes_out[flxlength/9:2*flxlength/3,1]))
+        AFluxTime = ftiming_ext[flxlength/9 + numpy.argmax(numpy.copy(fluxes_out[flxlength/9:2*flxlength/3,0]))]
+        BFluxTime = ftiming_ext[flxlength/9 + numpy.argmax(numpy.copy(fluxes_out[flxlength/9:2*flxlength/3,1]))]
     return fluxes_out, T_out, EM_out, ftiming_ext, AFluxMax, AFluxTime, BFluxMax, BFluxTime, Tmax, temp_errmin, temp_errmax, Tmax_time, EMmax, em_errmin, em_errmax, EMmax_time, temperature_min_flag, initials_flag, rising_phase_bins
     
     
