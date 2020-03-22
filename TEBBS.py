@@ -72,15 +72,23 @@ def return_sec(inputtime):
     sec = int(inputtime[17:19])
     sec += minute*60 + hour*3600
     return sec
-    
+
 
 # function to read GOES fluxes using the input file
 def read_flux(gfile):
     hdulist = fits.open(gfile)
-    data = hdulist[2].data[0]
-    timing = data[0]
-    fluxes = data[1]
-    return timing, fluxes
+    if (type(hdulist[0].data) is not numpy.ndarray):
+        data = hdulist[2].data[0]
+        timing = data[0]
+        fluxes = data[1]
+        return timing, fluxes
+    else:
+        timing = numpy.zeros([hdulist[0].data.shape[1]], dtype='>f8')
+        timing = hdulist[0].data[0].astype('float64')
+        fluxes = numpy.zeros([hdulist[0].data.shape[1],2], dtype='>f4')
+        fluxes[:,0] = hdulist[0].data[1].astype('float32')
+        fluxes[:,1] = hdulist[0].data[2].astype('float32')
+        return timing, fluxes
 
 
 # function to find the maximum time for the flare flux
@@ -165,7 +173,7 @@ def calculate_temperature_em(fluxes, gnum):
                 atemp[t,i,j] = temp
                 aem[t,i,j] = em
     return atemp, aem
-    
+
 
 # hot flare test; if the temperature is < 4MK for one of the points of the flare, discard the background combination
 def test_temperature_min(temp, labelgrid):
@@ -179,7 +187,7 @@ def test_temperature_min(temp, labelgrid):
         labelgrid = numpy.copy(labelgrid_copy)
         temperature_min_flag = 0
     return labelgrid, temperature_min_flag
-    
+
 
 # increasing array test; if the array growth is < average -7%, discard the background combination
 def test_array_increase(temp, labelgrid):
@@ -245,8 +253,8 @@ def test_t_em_initials(temp, temp_ext, em, em_ext, labelgrid):
     if (indexes != [-1,-1]):
         labelgrid_ext[indexes[0],indexes[1]] = 1
     return labelgrid_ext, initials_flag
-            
-            
+
+
 # define error ranges for the selected array
 def error_range(inputarray,labelgrid):
     cparray = numpy.copy(inputarray)
@@ -259,8 +267,8 @@ def error_range(inputarray,labelgrid):
     maxvalue = numpy.amax(maxarray[numpy.where(labelgrid == 1)])
     minvalue = numpy.amin(maxarray[numpy.where(labelgrid == 1)])
     return maxarray, minvalue, maxvalue
-    
-    
+
+
 # catch indeces of the best curve
 def best_curve_indeces(temp_maxarray, em_maxarray, labelgrid):
     temp_score = numpy.zeros(temp_maxarray.shape, dtype = int)
@@ -268,11 +276,11 @@ def best_curve_indeces(temp_maxarray, em_maxarray, labelgrid):
     for i in range (0,temp_maxarray.shape[0],1):
         for j in range (0,temp_maxarray.shape[1],1):
             val = temp_maxarray[i,j]
-            temp_score[i,j] = abs(len(numpy.where(temp_maxarray*labelgrid > val)[0]) - len(numpy.where(temp_maxarray*labelgrid < val)[0]) + len(numpy.where(labelgrid == 0)[0])) 
+            temp_score[i,j] = abs(len(numpy.where(temp_maxarray*labelgrid > val)[0]) - len(numpy.where(temp_maxarray*labelgrid < val)[0]) + len(numpy.where(labelgrid == 0)[0]))
             val = em_maxarray[i,j]
             em_score[i,j] = abs(len(numpy.where(em_maxarray*labelgrid > val)[0]) - len(numpy.where(em_maxarray*labelgrid < val)[0]) + len(numpy.where(labelgrid == 0)[0]))
     return numpy.where((temp_score+em_score) == numpy.amin(temp_score+em_score))[0][0], numpy.where((temp_score+em_score) == numpy.amin(temp_score+em_score))[1][0]
-    
+
 
 # check if the URL source exists
 def check_url(url):
@@ -282,11 +290,14 @@ def check_url(url):
     else:
         return False
 
-    
+
 # check if the file exists in the URL, and figure out the filename and satellite's version
 def find_goesfile(time):
-    file_postfix = time[0:4]+time[5:7]+time[8:10]
     year = time[0:4]
+    if ((time[0:4] in ['1996','1997','1998']) or ((time[0:4] == '1999') and (time[5:7] == '01') and (float(time[8:10]) < 15))):
+        file_postfix = time[2:4]+time[5:7]+time[8:10]
+    else:
+        file_postfix = time[0:4]+time[5:7]+time[8:10]
     # checking the version of the satellite beginning from goes08
     gver = '00'
     if check_url('http://umbra.nascom.nasa.gov/goes/fits/'+year+'/go08'+file_postfix+'.fits') == True : gver = '08'
@@ -342,14 +353,14 @@ def sgsmooth_flux(fluxes, gver):
     fluxes[:,0] = savgol_filter(numpy.copy(fluxes[:,0]), window_size, order)
     fluxes[:,1] = savgol_filter(numpy.copy(fluxes[:,1]), window_size, order)
     return fluxes
-    
-# main   
+
+# main
 def TEBBS_calculate(start_time, end_time, plot_key = 0, sys_win = 0, savitzky_golay = 0, extend_50 = 0):
-    
+
     # checking if the flare crossed the midnight point
     mid_cross = False
     if (start_time[0:10] != end_time[0:10]): mid_cross = True
-    
+
     if (mid_cross == False):
         gver, goesfile, goesfile_short = find_goesfile(start_time)
         if (gver == 0): sys.exit("The corresponding GOES file was not found")
@@ -359,7 +370,7 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0, sys_win = 0, savitzky_go
         timing, fluxes = read_flux(goesfile_short)
         flare_start_time = return_sec(start_time)
         flare_end_time = return_sec(end_time)
-        
+
     if (mid_cross == True):
         gver1, goesfile1, goesfile_short1 = find_goesfile(start_time)
         gver2, goesfile2, goesfile_short2 = find_goesfile(end_time)
@@ -394,7 +405,7 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0, sys_win = 0, savitzky_go
     labelgrid = numpy.zeros([bgrid.shape[0],bgrid.shape[1]], dtype = int)+1
     fluxes_bsub, fluxes_bsub_ext, ftimimng, ftiming_ext = extract_fluxes(timing, flare_start_time, flare_peak_time, fluxes, bgrid)
     rising_phase_bins = fluxes_bsub.shape[0]
-    
+
     # Now, one has a variety of background-subtracted arrays for both with first 1/6 of the rising phase
     # (called *ext) and without it. Let's calculate Temperatures and EMs for them.
     temp, em = calculate_temperature_em(fluxes_bsub, gver)
@@ -415,12 +426,12 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0, sys_win = 0, savitzky_go
     plot_temp, plot_em = calculate_temperature_em(flareflux_ext, gver)
     temp_maxarray, temp_errmin, temp_errmax = error_range(plot_temp,labelgrid)
     em_maxarray, em_errmin, em_errmax = error_range(plot_em,labelgrid)
-    
+
     if (sum(sum(labelgrid)) == 1):
         ibest,jbest = numpy.where(labelgrid == 1)
     else:
         ibest,jbest = best_curve_indeces(temp_maxarray, em_maxarray, labelgrid)
-    
+
     # plotting the graph if the plot_key is set
     if (plot_key == 1):
         for i in range (0,temp.shape[1]):
@@ -438,7 +449,7 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0, sys_win = 0, savitzky_go
         plt.imshow(labelgrid)
         plt.show()
 
-    
+
     # calculating parameters
     if (extend_50 == 0):
         Tmax = numpy.amax(plot_temp[5*plot_temp.shape[0]/36:5*plot_temp.shape[0]/6,ibest,jbest])
@@ -466,11 +477,12 @@ def TEBBS_calculate(start_time, end_time, plot_key = 0, sys_win = 0, savitzky_go
         AFluxTime = ftiming_ext[5*flxlength/36 + numpy.argmax(numpy.copy(fluxes_out[5*flxlength/36:5*flxlength/6,0]))]
         BFluxTime = ftiming_ext[5*flxlength/36 + numpy.argmax(numpy.copy(fluxes_out[5*flxlength/36:5*flxlength/6,1]))]
     else:
+        if (len(fluxes_out.shape) > 2):
+            print "ALERT: array reformation. Check the results."
+            fluxes_out = numpy.copy(fluxes_out[:,0,:])
         flxlength = len(numpy.copy(fluxes_out[:,0]))
         AFluxMax = numpy.amax(numpy.copy(fluxes_out[flxlength/9:2*flxlength/3,0]))
         BFluxMax = numpy.amax(numpy.copy(fluxes_out[flxlength/9:2*flxlength/3,1]))
         AFluxTime = ftiming_ext[flxlength/9 + numpy.argmax(numpy.copy(fluxes_out[flxlength/9:2*flxlength/3,0]))]
         BFluxTime = ftiming_ext[flxlength/9 + numpy.argmax(numpy.copy(fluxes_out[flxlength/9:2*flxlength/3,1]))]
     return fluxes_out, T_out, EM_out, ftiming_ext, AFluxMax, AFluxTime, BFluxMax, BFluxTime, Tmax, temp_errmin, temp_errmax, Tmax_time, EMmax, em_errmin, em_errmax, EMmax_time, temperature_min_flag, initials_flag, rising_phase_bins
-    
-    
